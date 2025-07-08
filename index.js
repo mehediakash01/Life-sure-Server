@@ -53,12 +53,16 @@ run();
 app.post("/users", async (req, res) => {
   const user = req.body;
 
-
   const existing = await userCollection.findOne({ email: user.email });
   if (existing) {
     return res.status(200).json({ message: "User already exists" });
   }
+  const result = await userCollection.insertOne(user);
 
-  await userCollection.insertOne(user);
-  res.status(201).json({ message: "User saved", user });
+
+  res.status(201).json({
+    message: "User saved",
+    insertedId: result.insertedId, 
+    user,
+  });
 });
