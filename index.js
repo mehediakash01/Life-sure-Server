@@ -81,3 +81,26 @@ app.post("/policies", async (req, res) => {
   const result = await policiesCollection.insertOne(newPolicy);
   res.send(result);
 });
+
+// Get all policies
+app.get("/policies", async (req, res) => {
+  try {
+    const policies = await policiesCollection.find().toArray();
+    res.send(policies);
+  } catch (error) {
+    console.error("Failed to fetch policies:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
+// Get all policies
+app.get("/policies", async (req, res) => {
+  try {
+    const policies = await policiesCollection.find().toArray();
+    res.send(policies);
+  } catch (error) {
+    console.error("Failed to fetch policies:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
