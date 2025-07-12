@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 // Keep reference to collections here
 const database = client.db("lifeSure");
 const userCollection = database.collection("user");
-
+const policiesCollection = database.collection("policies")
 async function run() {
   try {
     await client.connect();
@@ -65,4 +65,19 @@ app.post("/users", async (req, res) => {
     insertedId: result.insertedId, 
     user,
   });
+});
+// get user
+app.get("/users/:email", async (req, res) => {
+  const email = req.params.email;
+  const user = await userCollection.findOne({ email });
+  if (!user) return res.status(404).send("User not found");
+  res.send(user);
+});
+
+
+// POST /policies
+app.post("/policies", async (req, res) => {
+  const newPolicy = req.body;
+  const result = await policiesCollection.insertOne(newPolicy);
+  res.send(result);
 });
