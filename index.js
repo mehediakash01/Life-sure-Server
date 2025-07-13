@@ -54,6 +54,16 @@ async function run() {
         user,
       });
     });
+    // GET all users (for Manage Users page)
+    app.get("/users", async (req, res) => {
+      try {
+        const users = await userCollection.find().toArray();
+        res.send(users);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
 
     // Get user by email
     app.get("/users/:email", async (req, res) => {
