@@ -145,16 +145,32 @@ app.delete("/users/:id", async (req, res) => {
       res.send(result);
     });
 
-    // Get all policies
-    app.get("/policies", async (req, res) => {
-      try {
-        const policies = await policiesCollection.find().toArray();
-        res.send(policies);
-      } catch (error) {
-        console.error("Failed to fetch policies:", error);
-        res.status(500).send({ message: "Internal server error" });
-      }
-    });
+   app.get("/policies", async (req, res) => {
+  try {
+    const { search = "", category = "" } = req.query;
+
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    const policies = await policiesCollection.find(query).toArray();
+    res.send(policies);
+  } catch (error) {
+    console.error("Failed to fetch policies:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
 
     // Update a policy by id
     app.patch("/policies/:id", async (req, res) => {
