@@ -89,7 +89,7 @@ async function run() {
         res.status(500).send({ message: "Failed to update last login" });
       }
     });
-    
+
     // update user role
 
     app.patch("/users/:id/role", async (req, res) => {
@@ -116,6 +116,26 @@ async function run() {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// Delete User
+
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const result = await userCollection.deleteOne({ _id: new ObjectId(userId) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
     // Add a new policy
