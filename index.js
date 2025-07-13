@@ -62,6 +62,23 @@ async function run() {
       if (!user) return res.status(404).send("User not found");
       res.send(user);
     });
+    // update user lastLogin
+    app.patch("/users/last-login/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const { lastLogin } = req.body;
+
+        const result = await userCollection.updateOne(
+          { email },
+          { $set: { lastLogin } }
+        );
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating last login:", error);
+        res.status(500).send({ message: "Failed to update last login" });
+      }
+    });
 
     // Add a new policy
     app.post("/policies", async (req, res) => {
@@ -103,7 +120,9 @@ async function run() {
     app.delete("/policies/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const result = await policiesCollection.deleteOne({ _id: new ObjectId(id) });
+        const result = await policiesCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
         res.send(result);
       } catch (error) {
         console.error("Error deleting policy:", error);
