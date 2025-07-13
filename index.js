@@ -89,6 +89,34 @@ async function run() {
         res.status(500).send({ message: "Failed to update last login" });
       }
     });
+    
+    // update user role
+
+    app.patch("/users/:id/role", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { role } = req.body;
+
+    if (!["admin", "agent", "customer"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    const result = await userCollection.updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { role } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ message: "User not found or role unchanged" });
+    }
+
+    res.json({ message: "User role updated successfully" });
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
     // Add a new policy
     app.post("/policies", async (req, res) => {
