@@ -171,6 +171,14 @@ app.delete("/users/:id", async (req, res) => {
   }
 });
 
+// GET a single policy by ID
+app.get("/policies/:id", async (req, res) => {
+  const id = req.params.id;
+  const policy = await policiesCollection.findOne({ _id: new ObjectId(id) });
+  if (!policy) return res.status(404).send("Policy not found");
+  res.send(policy);
+});
+
 
     // Update a policy by id
     app.patch("/policies/:id", async (req, res) => {
