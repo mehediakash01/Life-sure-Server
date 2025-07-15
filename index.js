@@ -37,7 +37,7 @@ async function run() {
     const database = client.db("lifeSure");
     const userCollection = database.collection("user");
     const policiesCollection = database.collection("policies");
-
+    const applicationsCollection = database.collection("applications");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -93,50 +93,52 @@ async function run() {
     // update user role
 
     app.patch("/users/:id/role", async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { role } = req.body;
+      try {
+        const userId = req.params.id;
+        const { role } = req.body;
 
-    if (!["admin", "agent", "customer"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
+        if (!["admin", "agent", "customer"].includes(role)) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
 
-    const result = await userCollection.updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { role } }
-    );
+        const result = await userCollection.updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: { role } }
+        );
 
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: "User not found or role unchanged" });
-    }
+        if (result.modifiedCount === 0) {
+          return res
+            .status(404)
+            .json({ message: "User not found or role unchanged" });
+        }
 
-    res.json({ message: "User role updated successfully" });
-  } catch (error) {
-    console.error("Error updating user role:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+        res.json({ message: "User role updated successfully" });
+      } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
-// Delete User
+    // Delete User
 
-app.delete("/users/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
+    app.delete("/users/:id", async (req, res) => {
+      try {
+        const userId = req.params.id;
 
-    const result = await userCollection.deleteOne({ _id: new ObjectId(userId) });
+        const result = await userCollection.deleteOne({
+          _id: new ObjectId(userId),
+        });
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
+        res.json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
     // Add a new policy
     app.post("/policies", async (req, res) => {
@@ -145,40 +147,41 @@ app.delete("/users/:id", async (req, res) => {
       res.send(result);
     });
 
-   app.get("/policies", async (req, res) => {
-  try {
-    const { search = "", category = "" } = req.query;
+    app.get("/policies", async (req, res) => {
+      try {
+        const { search = "", category = "" } = req.query;
 
-    const query = {};
+        const query = {};
 
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { category: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-      ];
-    }
+        if (search) {
+          query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { category: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+          ];
+        }
 
-    if (category) {
-      query.category = category;
-    }
+        if (category) {
+          query.category = category;
+        }
 
-    const policies = await policiesCollection.find(query).toArray();
-    res.send(policies);
-  } catch (error) {
-    console.error("Failed to fetch policies:", error);
-    res.status(500).send({ message: "Internal server error" });
-  }
-});
+        const policies = await policiesCollection.find(query).toArray();
+        res.send(policies);
+      } catch (error) {
+        console.error("Failed to fetch policies:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
 
-// GET a single policy by ID
-app.get("/policies/:id", async (req, res) => {
-  const id = req.params.id;
-  const policy = await policiesCollection.findOne({ _id: new ObjectId(id) });
-  if (!policy) return res.status(404).send("Policy not found");
-  res.send(policy);
-});
-
+    // GET a single policy by ID
+    app.get("/policies/:id", async (req, res) => {
+      const id = req.params.id;
+      const policy = await policiesCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!policy) return res.status(404).send("Policy not found");
+      res.send(policy);
+    });
 
     // Update a policy by id
     app.patch("/policies/:id", async (req, res) => {
@@ -209,6 +212,31 @@ app.get("/policies/:id", async (req, res) => {
       } catch (error) {
         console.error("Error deleting policy:", error);
         res.status(500).send({ message: "Delete failed" });
+      }
+    });
+
+    // post application data
+    app.post("/applications", async (req, res) => {
+      try {
+        const application = req.body;
+
+        // Add default status
+        application.status = "pending";
+
+        application.submittedAt = new Date();
+
+        const result = await applicationsCollection.insertOne(application);
+        res.send({
+          success: true,
+          message: "Application submitted successfully",
+          insertedId: result.insertedId,
+        });
+      } catch (error) {
+        console.error("Failed to submit application:", error);
+        res.status(500).send({
+          success: false,
+          message: "Internal server error",
+        });
       }
     });
 
