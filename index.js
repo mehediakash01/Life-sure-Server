@@ -240,6 +240,19 @@ async function run() {
       }
     });
 
+    // getting  application data
+    
+    app.get("/applications", async (req, res) => {
+  try {
+    const applications = await applicationsCollection.find().sort({ submittedAt: -1 }).toArray();
+    res.send(applications);
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
+
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
       console.log(`🚀 Server running on http://localhost:${port}`);
