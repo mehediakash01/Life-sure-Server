@@ -140,6 +140,8 @@ async function run() {
       }
     });
 
+  
+
     // Add a new policy
     app.post("/policies", async (req, res) => {
       const newPolicy = req.body;
@@ -241,17 +243,55 @@ async function run() {
     });
 
     // getting  application data
-    
-    app.get("/applications", async (req, res) => {
-  try {
-    const applications = await applicationsCollection.find().sort({ submittedAt: -1 }).toArray();
-    res.send(applications);
-  } catch (error) {
-    console.error("Error fetching applications:", error);
-    res.status(500).send({ message: "Server error" });
-  }
-});
 
+    app.get("/applications", async (req, res) => {
+      try {
+        const applications = await applicationsCollection
+          .find()
+          .sort({ submittedAt: -1 })
+          .toArray();
+        res.send(applications);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
+
+    // Assign Agent and mark as approved
+    app.patch("/applications/:id/assign-agent", async (req, res) => {
+      const { id } = req.params;
+      const { agentEmail } = req.body;
+
+      try {
+        const result = await applicationsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              assignedAgent: agentEmail,
+              
+            },
+          }
+        );
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "Error assigning agent" });
+      }
+    });
+
+    // Reject application
+    app.patch("/applications/:id/reject", async (req, res) => {
+      const { id } = req.params;
+
+      try {
+        const result = await applicationsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status: "rejected" } }
+        );
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "Error rejecting application" });
+      }
+    });
 
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
