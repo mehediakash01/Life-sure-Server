@@ -140,8 +140,6 @@ async function run() {
       }
     });
 
-  
-
     // Add a new policy
     app.post("/policies", async (req, res) => {
       const newPolicy = req.body;
@@ -268,7 +266,6 @@ async function run() {
           {
             $set: {
               assignedAgent: agentEmail,
-              
             },
           }
         );
@@ -278,17 +275,25 @@ async function run() {
       }
     });
 
-    // Reject application
+//   update status if rejected
+
     app.patch("/applications/:id/reject", async (req, res) => {
       const { id } = req.params;
+      const { feedback } = req.body;
 
       try {
         const result = await applicationsCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: { status: "rejected" } }
+          {
+            $set: {
+              status: "rejected",
+              rejectionFeedback: feedback, 
+            },
+          }
         );
         res.send(result);
       } catch (err) {
+        console.error("Error rejecting application:", err);
         res.status(500).send({ message: "Error rejecting application" });
       }
     });
