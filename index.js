@@ -36,6 +36,7 @@ async function run() {
 
     const database = client.db("lifeSure");
     const userCollection = database.collection("user");
+    const agentApplicationsCollection = database.collection("agents");
     const policiesCollection = database.collection("policies");
     const applicationsCollection = database.collection("applications");
     // Save user if not exists
@@ -54,6 +55,28 @@ async function run() {
         user,
       });
     });
+
+// post agent
+    app.post("/agent-applications", async (req, res) => {
+  try {
+    const application = req.body;  
+    application.status = "pending"; 
+    application.appliedAt = new Date();
+
+    const result = await agentApplicationsCollection.insertOne(application);
+
+    res.send({
+      success: true,
+      insertedId: result.insertedId,
+      message: "Agent application submitted successfully",
+    });
+  } catch (error) {
+    console.error("Failed to submit agent application:", error);
+    res.status(500).send({ success: false, message: "Internal server error" });
+  }
+});
+
+
     // GET all users (for Manage Users page)
     app.get("/users", async (req, res) => {
       try {
