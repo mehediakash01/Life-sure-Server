@@ -75,6 +75,121 @@ async function run() {
     res.status(500).send({ success: false, message: "Internal server error" });
   }
 });
+// GET all pending agent applications
+app.get("/agent-applications/pending", async (req, res) => {
+  try {
+    const pending = await agentApplicationsCollection.find({ status: "pending" }).toArray();
+    res.send(pending);
+  } catch (err) {
+    console.error("Error fetching pending agent applications:", err);
+    res.status(500).send({ message: "Failed to fetch pending applications" });
+  }
+});
+
+
+  // update user role
+
+    app.patch("/users/:id/role", async (req, res) => {
+      try {
+        const userId = req.params.id;
+        const { role } = req.body;
+
+        if (!["admin", "agent", "customer"].includes(role)) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
+
+        const result = await userCollection.updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: { role } }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res
+            .status(404)
+            .json({ message: "User not found or role unchanged" });
+        }
+
+        res.json({ message: "User role updated successfully" });
+      } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+// update agent role if approved
+app.patch("/agent-applications/approve/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+   const {status} = req.body
+    // // 1. Update role in users collection
+    // await userCollection.updateOne(
+    //   { email },
+    //   { $set: { role: "agent" } }
+    // );
+
+    // 2. Update application status
+    const result = await agentApplicationsCollection.updateOne(
+      { email },
+      { $set: { status} }
+    );
+
+    res.send(result);
+  } catch (err) {
+    console.error("Error approving agent:", err);
+    res.status(500).send({ message: "Failed to approve agent" });
+  }
+});
+
+
+// Update user role by email (for agent approval case)
+app.patch("/users/promote/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const { role } = req.body;
+
+    if (!["admin", "agent", "customer"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    const result = await userCollection.updateOne(
+      { email },
+      { $set: { role } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "User not found or role unchanged" });
+    }
+
+    res.json({ message: "User role updated successfully" });
+  } catch (error) {
+    console.error("Error updating user role by email:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+// reject agent and send feedback
+app.patch("/agent-applications/reject/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const { feedback } = req.body;
+
+    const result = await agentApplicationsCollection.updateOne(
+      { email },
+      { $set: { status: "rejected", feedback } }
+    );
+
+    res.send(result);
+  } catch (err) {
+    console.error("Error rejecting agent:", err);
+    res.status(500).send({ message: "Failed to reject agent" });
+  }
+});
+
+
+
 
 
     // GET all users (for Manage Users page)
@@ -113,34 +228,7 @@ async function run() {
       }
     });
 
-    // update user role
-
-    app.patch("/users/:id/role", async (req, res) => {
-      try {
-        const userId = req.params.id;
-        const { role } = req.body;
-
-        if (!["admin", "agent", "customer"].includes(role)) {
-          return res.status(400).json({ message: "Invalid role" });
-        }
-
-        const result = await userCollection.updateOne(
-          { _id: new ObjectId(userId) },
-          { $set: { role } }
-        );
-
-        if (result.modifiedCount === 0) {
-          return res
-            .status(404)
-            .json({ message: "User not found or role unchanged" });
-        }
-
-        res.json({ message: "User role updated successfully" });
-      } catch (error) {
-        console.error("Error updating user role:", error);
-        res.status(500).json({ message: "Server error" });
-      }
-    });
+  
 
     // Delete User
 
