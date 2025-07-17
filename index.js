@@ -488,6 +488,17 @@ app.put('/blogs/:id', async (req, res) => {
   }
 });
 
+// delete blog
+app.delete('/blogs/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await blogsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ error: "Failed to delete blog" });
+  }
+});
+
 
 
 
