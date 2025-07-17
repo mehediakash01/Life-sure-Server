@@ -379,6 +379,33 @@ app.patch("/agent-applications/reject/:id", async (req, res) => {
   }
 });
 
+// update status and increase count if approved
+app.patch("/applications/status/:id", async (req, res) => {
+  const id = req.params.id;
+  const { status, policy_name } = req.body;
+
+  try {
+    const updateResult = await applicationsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status } }
+    );
+
+    // Optional: Increase policy purchase count if status becomes 'approved'
+    if (status === "approved") {
+      await policiesCollection.updateOne(
+        { title: policy_name },
+        { $inc: { purchaseCount: 1 } } // Assume this field exists
+      );
+    }
+
+    res.send(updateResult);
+  } catch (err) {
+    console.error("Failed to update status:", err);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
+
 
     // Assign Agent and mark as approved
     app.patch("/applications/:id/assign-agent", async (req, res) => {
