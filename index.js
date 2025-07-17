@@ -171,13 +171,13 @@ app.patch("/users/promote/:email", async (req, res) => {
 
 
 // reject agent and send feedback
-app.patch("/agent-applications/reject/:email", async (req, res) => {
+app.patch("/agent-applications/reject/:id", async (req, res) => {
   try {
-    const email = req.params.email;
+    const {id }= req.params;
     const { feedback } = req.body;
 
     const result = await agentApplicationsCollection.updateOne(
-      { email },
+      { _id: new ObjectId(id) },
       { $set: { status: "rejected", feedback } }
     );
 
@@ -365,6 +365,20 @@ app.patch("/agent-applications/reject/:email", async (req, res) => {
         res.status(500).send({ message: "Server error" });
       }
     });
+// get application data by email
+    app.get("/applications/agent/:email", async (req, res) => {
+  const email = req.params.email;
+  try {
+    const assignedApplications = await applicationsCollection
+      .find({ assignedAgent: email })
+      .toArray();
+    res.send(assignedApplications);
+  } catch (err) {
+    console.error("Failed to get assigned applications:", err);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
 
     // Assign Agent and mark as approved
     app.patch("/applications/:id/assign-agent", async (req, res) => {
