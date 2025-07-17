@@ -461,6 +461,35 @@ app.patch("/applications/status/:id", async (req, res) => {
   }
 });
 
+app.get('/blogs', async (req, res) => {
+  try {
+    const email = req.query.email;
+    const query = email ? { authorEmail: email } : {};
+    const blogs = await blogsCollection.find(query).sort({ publishDate: -1 }).toArray();
+    res.send(blogs);
+  } catch (error) {
+    res.status(500).send({ error: "Failed to fetch blogs" });
+  }
+});
+
+// update blog by id
+
+app.put('/blogs/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updatedBlog = req.body;
+    const result = await blogsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedBlog }
+    );
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ error: "Failed to update blog" });
+  }
+});
+
+
+
 
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
