@@ -39,6 +39,7 @@ async function run() {
     const agentApplicationsCollection = database.collection("agents");
     const policiesCollection = database.collection("policies");
     const applicationsCollection = database.collection("applications");
+    const blogsCollection = database.collection("blogs");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -121,12 +122,7 @@ app.patch("/agent-applications/approve/:email", async (req, res) => {
   try {
     const email = req.params.email;
    const {status} = req.body
-    // // 1. Update role in users collection
-    // await userCollection.updateOne(
-    //   { email },
-    //   { $set: { role: "agent" } }
-    // );
-
+  
     // 2. Update application status
     const result = await agentApplicationsCollection.updateOne(
       { email },
@@ -449,6 +445,22 @@ app.patch("/applications/status/:id", async (req, res) => {
         res.status(500).send({ message: "Error rejecting application" });
       }
     });
+
+    // posting blogs(agent)
+
+    app.post("/blogs", async (req, res) => {
+  try {
+    const blogData = req.body;
+
+    const result = await blogsCollection.insertOne(blogData);
+
+    res.status(201).send({ insertedId: result.insertedId });
+  } catch (error) {
+    console.error("Error saving blog:", error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+});
+
 
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
