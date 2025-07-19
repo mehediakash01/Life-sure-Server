@@ -58,38 +58,43 @@ async function run() {
       });
     });
 
-// post agent
+    // post agent
     app.post("/agent-applications", async (req, res) => {
-  try {
-    const application = req.body;  
-    application.status = "pending"; 
-    application.appliedAt = new Date();
+      try {
+        const application = req.body;
+        application.status = "pending";
+        application.appliedAt = new Date();
 
-    const result = await agentApplicationsCollection.insertOne(application);
+        const result = await agentApplicationsCollection.insertOne(application);
 
-    res.send({
-      success: true,
-      insertedId: result.insertedId,
-      message: "Agent application submitted successfully",
+        res.send({
+          success: true,
+          insertedId: result.insertedId,
+          message: "Agent application submitted successfully",
+        });
+      } catch (error) {
+        console.error("Failed to submit agent application:", error);
+        res
+          .status(500)
+          .send({ success: false, message: "Internal server error" });
+      }
     });
-  } catch (error) {
-    console.error("Failed to submit agent application:", error);
-    res.status(500).send({ success: false, message: "Internal server error" });
-  }
-});
-// GET all pending agent applications
-app.get("/agent-applications/pending", async (req, res) => {
-  try {
-    const pending = await agentApplicationsCollection.find({ status: "pending" }).toArray();
-    res.send(pending);
-  } catch (err) {
-    console.error("Error fetching pending agent applications:", err);
-    res.status(500).send({ message: "Failed to fetch pending applications" });
-  }
-});
+    // GET all pending agent applications
+    app.get("/agent-applications/pending", async (req, res) => {
+      try {
+        const pending = await agentApplicationsCollection
+          .find({ status: "pending" })
+          .toArray();
+        res.send(pending);
+      } catch (err) {
+        console.error("Error fetching pending agent applications:", err);
+        res
+          .status(500)
+          .send({ message: "Failed to fetch pending applications" });
+      }
+    });
 
-
-  // update user role
+    // update user role
 
     app.patch("/users/:id/role", async (req, res) => {
       try {
@@ -118,76 +123,70 @@ app.get("/agent-applications/pending", async (req, res) => {
       }
     });
 
-// update agent role if approved
-app.patch("/agent-applications/approve/:email", async (req, res) => {
-  try {
-    const email = req.params.email;
-   const {status} = req.body
-  
-    // 2. Update application status
-    const result = await agentApplicationsCollection.updateOne(
-      { email },
-      { $set: { status} }
-    );
+    // update agent role if approved
+    app.patch("/agent-applications/approve/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const { status } = req.body;
 
-    res.send(result);
-  } catch (err) {
-    console.error("Error approving agent:", err);
-    res.status(500).send({ message: "Failed to approve agent" });
-  }
-});
+        // 2. Update application status
+        const result = await agentApplicationsCollection.updateOne(
+          { email },
+          { $set: { status } }
+        );
 
+        res.send(result);
+      } catch (err) {
+        console.error("Error approving agent:", err);
+        res.status(500).send({ message: "Failed to approve agent" });
+      }
+    });
 
-// Update user role by email (for agent approval case)
-app.patch("/users/promote/:email", async (req, res) => {
-  try {
-    const email = req.params.email;
-    const { role } = req.body;
+    // Update user role by email (for agent approval case)
+    app.patch("/users/promote/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const { role } = req.body;
 
-    if (!["admin", "agent", "customer"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
+        if (!["admin", "agent", "customer"].includes(role)) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
 
-    const result = await userCollection.updateOne(
-      { email },
-      { $set: { role } }
-    );
+        const result = await userCollection.updateOne(
+          { email },
+          { $set: { role } }
+        );
 
-    if (result.modifiedCount === 0) {
-      return res
-        .status(404)
-        .json({ message: "User not found or role unchanged" });
-    }
+        if (result.modifiedCount === 0) {
+          return res
+            .status(404)
+            .json({ message: "User not found or role unchanged" });
+        }
 
-    res.json({ message: "User role updated successfully" });
-  } catch (error) {
-    console.error("Error updating user role by email:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+        res.json({ message: "User role updated successfully" });
+      } catch (error) {
+        console.error("Error updating user role by email:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
+    // reject agent and send feedback
+    app.patch("/agent-applications/reject/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { feedback } = req.body;
 
-// reject agent and send feedback
-app.patch("/agent-applications/reject/:id", async (req, res) => {
-  try {
-    const {id }= req.params;
-    const { feedback } = req.body;
+        const result = await agentApplicationsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status: "rejected", feedback } }
+        );
 
-    const result = await agentApplicationsCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status: "rejected", feedback } }
-    );
-
-    res.send(result);
-  } catch (err) {
-    console.error("Error rejecting agent:", err);
-    res.status(500).send({ message: "Failed to reject agent" });
-  }
-});
-
-
-
-
+        res.send(result);
+      } catch (err) {
+        console.error("Error rejecting agent:", err);
+        res.status(500).send({ message: "Failed to reject agent" });
+      }
+    });
 
     // GET all users (for Manage Users page)
     app.get("/users", async (req, res) => {
@@ -224,8 +223,6 @@ app.patch("/agent-applications/reject/:id", async (req, res) => {
         res.status(500).send({ message: "Failed to update last login" });
       }
     });
-
-  
 
     // Delete User
 
@@ -362,63 +359,59 @@ app.patch("/agent-applications/reject/:id", async (req, res) => {
         res.status(500).send({ message: "Server error" });
       }
     });
-// get application data by email
+    // get application data by email
     app.get("/applications/agent/:email", async (req, res) => {
-  const email = req.params.email;
-  try {
-    const assignedApplications = await applicationsCollection
-      .find({ assignedAgent: email })
-      .toArray();
-    res.send(assignedApplications);
-  } catch (err) {
-    console.error("Failed to get assigned applications:", err);
-    res.status(500).send({ message: "Internal server error" });
-  }
-});
+      const email = req.params.email;
+      try {
+        const assignedApplications = await applicationsCollection
+          .find({ assignedAgent: email })
+          .toArray();
+        res.send(assignedApplications);
+      } catch (err) {
+        console.error("Failed to get assigned applications:", err);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
 
+    // GET /applications/user/:email
+    app.get("/applications/user", async (req, res) => {
+      const email = req.query.email;
+      try {
+        const userApps = await applicationsCollection
+          .find({ email })
+          .sort({ submittedAt: -1 }) // latest first
+          .toArray();
+        res.send(userApps);
+      } catch (err) {
+        res.status(500).send({ message: "Failed to fetch applications" });
+      }
+    });
 
-// GET /applications/user/:email
-app.get("/applications/user", async (req, res) => {
-  const email = req.query.email;
-  try {
-    const userApps = await applicationsCollection
-      .find({ email })
-      .sort({ submittedAt: -1 }) // latest first
-      .toArray();
-    res.send(userApps);
-  } catch (err) {
-    res.status(500).send({ message: "Failed to fetch applications" });
-  }
-});
+    // update status and increase count if approved
+    app.patch("/applications/status/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status, policy_name } = req.body;
 
+      try {
+        const updateResult = await applicationsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status } }
+        );
 
-// update status and increase count if approved
-app.patch("/applications/status/:id", async (req, res) => {
-  const id = req.params.id;
-  const { status, policy_name } = req.body;
+        // Optional: Increase policy purchase count if status becomes 'approved'
+        if (status === "approved") {
+          await policiesCollection.updateOne(
+            { title: policy_name },
+            { $inc: { purchaseCount: 1 } } // Assume this field exists
+          );
+        }
 
-  try {
-    const updateResult = await applicationsCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status } }
-    );
-
-    // Optional: Increase policy purchase count if status becomes 'approved'
-    if (status === "approved") {
-      await policiesCollection.updateOne(
-        { title: policy_name },
-        { $inc: { purchaseCount: 1 } } // Assume this field exists
-      );
-    }
-
-    res.send(updateResult);
-  } catch (err) {
-    console.error("Failed to update status:", err);
-    res.status(500).send({ message: "Internal server error" });
-  }
-});
-
-
+        res.send(updateResult);
+      } catch (err) {
+        console.error("Failed to update status:", err);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
 
     // Assign Agent and mark as approved
     app.patch("/applications/:id/assign-agent", async (req, res) => {
@@ -440,7 +433,7 @@ app.patch("/applications/status/:id", async (req, res) => {
       }
     });
 
-//   update status if rejected
+    //   update status if rejected
 
     app.patch("/applications/:id/reject", async (req, res) => {
       const { id } = req.params;
@@ -452,7 +445,7 @@ app.patch("/applications/status/:id", async (req, res) => {
           {
             $set: {
               status: "rejected",
-              rejectionFeedback: feedback, 
+              rejectionFeedback: feedback,
             },
           }
         );
@@ -466,92 +459,79 @@ app.patch("/applications/status/:id", async (req, res) => {
     // posting blogs(agent)
 
     app.post("/blogs", async (req, res) => {
-  try {
-    const blogData = req.body;
+      try {
+        const blogData = req.body;
 
-    const result = await blogsCollection.insertOne(blogData);
+        const result = await blogsCollection.insertOne(blogData);
 
-    res.status(201).send({ insertedId: result.insertedId });
-  } catch (error) {
-    console.error("Error saving blog:", error);
-    res.status(500).send({ message: "Internal Server Error" });
-  }
-});
-
-app.get('/blogs', async (req, res) => {
-  try {
-    const email = req.query.email;
-    const query = email ? { authorEmail: email } : {};
-    const blogs = await blogsCollection.find(query).sort({ publishDate: -1 }).toArray();
-    res.send(blogs);
-  } catch (error) {
-    res.status(500).send({ error: "Failed to fetch blogs" });
-  }
-});
-
-// update blog by id
-
-app.put('/blogs/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const updatedBlog = req.body;
-    const result = await blogsCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updatedBlog }
-    );
-    res.send(result);
-  } catch (error) {
-    res.status(500).send({ error: "Failed to update blog" });
-  }
-});
-
-// delete blog
-app.delete('/blogs/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const result = await blogsCollection.deleteOne({ _id: new ObjectId(id) });
-    res.send(result);
-  } catch (error) {
-    res.status(500).send({ error: "Failed to delete blog" });
-  }
-});
-
-
-// post review into database
-
-app.post("/reviews", async (req, res) => {
-  const { userEmail, policyName, agentEmail, rating, feedback, submittedAt } = req.body;
-
-  try {
-    // Check if policy is approved
-    const application = await applicationsCollection.findOne({
-      email: userEmail,
-      policy_name: policyName,
-      status: "approved"
+        res.status(201).send({ insertedId: result.insertedId });
+      } catch (error) {
+        console.error("Error saving blog:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
     });
 
-    if (!application) {
-      return res.status(400).send({ message: "Only approved policies can be reviewed" });
-    }
-
-    const result = await reviewsCollection.insertOne({
-      userEmail,
-      policyName,
-      agentEmail,
-      rating,
-      feedback,
-      submittedAt
+    app.get("/blogs", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const query = email ? { authorEmail: email } : {};
+        const blogs = await blogsCollection
+          .find(query)
+          .sort({ publishDate: -1 })
+          .toArray();
+        res.send(blogs);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to fetch blogs" });
+      }
     });
 
-    res.send({ success: true, insertedId: result.insertedId });
-  } catch (err) {
-    res.status(500).send({ message: "Review submission failed" });
-  }
-});
+    // update blog by id
 
+    app.put("/blogs/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedBlog = req.body;
+        const result = await blogsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedBlog }
+        );
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to update blog" });
+      }
+    });
 
+    // delete blog
+    app.delete("/blogs/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await blogsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to delete blog" });
+      }
+    });
 
+    // post review into database
 
+    app.post("/reviews", async (req, res) => {
+  
+      const reviewData = req.body;
+
+      try {
+       
+
+        const result = await reviewsCollection.insertOne( reviewData
+        
+        );
+
+        res.send({ success: true, insertedId: result.insertedId });
+      } catch (err) {
+        res.status(500).send({ message: "Review submission failed" });
+      }
+    });
 
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
