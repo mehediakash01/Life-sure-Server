@@ -375,6 +375,22 @@ app.patch("/agent-applications/reject/:id", async (req, res) => {
   }
 });
 
+
+// GET /applications/user/:email
+app.get("/applications/user/:email", async (req, res) => {
+  const email = req.params.email;
+  try {
+    const userApps = await applicationsCollection
+      .find({ email })
+      .sort({ submittedAt: -1 }) // latest first
+      .toArray();
+    res.send(userApps);
+  } catch (err) {
+    res.status(500).send({ message: "Failed to fetch applications" });
+  }
+});
+
+
 // update status and increase count if approved
 app.patch("/applications/status/:id", async (req, res) => {
   const id = req.params.id;
