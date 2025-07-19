@@ -40,6 +40,7 @@ async function run() {
     const policiesCollection = database.collection("policies");
     const applicationsCollection = database.collection("applications");
     const blogsCollection = database.collection("blogs");
+    const reviewsCollection = database.collection("reviews");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -377,8 +378,8 @@ app.patch("/agent-applications/reject/:id", async (req, res) => {
 
 
 // GET /applications/user/:email
-app.get("/applications/user/:email", async (req, res) => {
-  const email = req.params.email;
+app.get("/applications/user", async (req, res) => {
+  const email = req.query.email;
   try {
     const userApps = await applicationsCollection
       .find({ email })
@@ -514,6 +515,40 @@ app.delete('/blogs/:id', async (req, res) => {
     res.status(500).send({ error: "Failed to delete blog" });
   }
 });
+
+
+// post review into database
+
+app.post("/reviews", async (req, res) => {
+  const { userEmail, policyName, agentEmail, rating, feedback, submittedAt } = req.body;
+
+  try {
+    // Check if policy is approved
+    const application = await applicationsCollection.findOne({
+      email: userEmail,
+      policy_name: policyName,
+      status: "approved"
+    });
+
+    if (!application) {
+      return res.status(400).send({ message: "Only approved policies can be reviewed" });
+    }
+
+    const result = await reviewsCollection.insertOne({
+      userEmail,
+      policyName,
+      agentEmail,
+      rating,
+      feedback,
+      submittedAt
+    });
+
+    res.send({ success: true, insertedId: result.insertedId });
+  } catch (err) {
+    res.status(500).send({ message: "Review submission failed" });
+  }
+});
+
 
 
 
