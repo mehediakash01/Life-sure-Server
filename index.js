@@ -17,7 +17,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-
+const stripe = require('stripe')(process.env.PAYMENT_KEY);
 // Mongo URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jcgtqm0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -548,6 +548,19 @@ async function run() {
         res.status(500).send({ message: "Review submission failed" });
       }
     });
+
+    app.post('/create-payment-intent',async (req,res)=>{
+      const {amountInCents} = req.body;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:amountInCents,
+        currency: 'usd',
+        // payment_Method_types: ['card']
+        
+      })
+      res.json({clientSecret:paymentIntent.client_secret})
+    })
+
+
 
     // Start server AFTER DB connection is ready
     app.listen(port, () => {
