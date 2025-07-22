@@ -359,6 +359,22 @@ async function run() {
         res.status(500).send({ message: "Server error" });
       }
     });
+    // getting  application data by id
+
+    app.get("/applications/:id", async (req, res) => {
+      const {id} = req.params;
+      const filter = {_id: new ObjectId(id)};
+      try {
+        const applications = await applicationsCollection
+          .findOne(filter)
+          
+       
+        res.send(applications);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
     // get application data by email
     app.get("/applications/agent/:email", async (req, res) => {
       const email = req.params.email;
