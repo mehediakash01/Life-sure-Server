@@ -449,6 +449,30 @@ async function run() {
       }
     });
 
+    // update payment status 
+app.patch('/applications/pay/:id', async (req, res) => {
+  const { id } = req.params;
+  const paidAt = new Date();
+
+  try {
+    const filter = { _id: new ObjectId(id) };
+
+    const updateDoc = {
+      $set: {
+        paymentStatus: "paid",
+        dueDate: paidAt, // reuse dueDate field to store paidAt
+      },
+    };
+
+    const result = await applicationsCollection.updateOne(filter, updateDoc);
+    res.send(result);
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
+
     //   update status if rejected
 
     app.patch("/applications/:id/reject", async (req, res) => {
