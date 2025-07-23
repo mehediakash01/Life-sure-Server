@@ -440,10 +440,10 @@ async function run() {
   if (!email) return res.status(400).send({ message: "Missing email query" });
 
   try {
-    const activeApp = await applicationsCollection.findOne({
+    const activeApp = await applicationsCollection.find({
       email,
       policyStatus: 'active'
-    });
+    })   .toArray();
 
     if (!activeApp) {
       return res.status(404).send({ message: "No active policy found" });
