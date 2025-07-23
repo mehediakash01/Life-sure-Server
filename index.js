@@ -587,6 +587,8 @@ app.patch('/applications/pay/:id', async (req, res) => {
       }
     });
 
+ 
+
     // post review into database
 
     app.post("/reviews", async (req, res) => {
