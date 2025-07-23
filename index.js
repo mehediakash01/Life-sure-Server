@@ -672,6 +672,27 @@ app.get('/faqs', async (req, res) => {
   }
 });
 
+// update faqs helpfulCount
+app.patch('/faqs/:id/helpful', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const result = await faqCollections.updateOne(
+      { _id: new ObjectId(id) },
+      { $inc: { helpfulCount: 1 } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).send({ message: "FAQ not found or already updated." });
+    }
+
+    res.send({ message: "Vote added!" });
+  } catch (error) {
+    console.error("Error updating helpful vote:", error);
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
 
 
 
