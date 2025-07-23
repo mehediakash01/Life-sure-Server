@@ -42,6 +42,7 @@ async function run() {
     const blogsCollection = database.collection("blogs");
     const reviewsCollection = database.collection("reviews");
     const paymentCollection = database.collection("payments");
+    const claimsCollection = database.collection("claims");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -628,6 +629,27 @@ app.post('/payment-history', async (req, res) => {
     res.status(500).send({ message: "Server error" });
   }
 });
+
+// Create a new claim request
+app.post('/claims', async (req, res) => {
+  const claim = req.body;
+
+
+  try {
+   
+
+    const result = await claimsCollection.insertOne(claim);
+
+    res.send({
+      message: "Claim submitted successfully",
+      insertedId: result.insertedId,
+    });
+  } catch (error) {
+    console.error("Error submitting claim:", error);
+    res.status(500).send({ message: "Failed to submit claim" });
+  }
+});
+
 
 
 
