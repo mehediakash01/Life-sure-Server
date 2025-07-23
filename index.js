@@ -577,6 +577,25 @@ app.patch('/applications/pay/:id', async (req, res) => {
 });
 
 
+// GET blog by ID
+app.get("/blogs/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+   
+
+    const blog = await blogsCollection.findOne({ _id: new ObjectId(id) });
+    if (!blog) {
+      return res.status(404).send({ error: "Blog not found" });
+    }
+
+    res.send(blog);
+  } catch (error) {
+    console.error("Error fetching blog:", error);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+
     // update blog by id
 
     app.put("/blogs/:id", async (req, res) => {
