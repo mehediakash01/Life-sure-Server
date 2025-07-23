@@ -43,6 +43,7 @@ async function run() {
     const reviewsCollection = database.collection("reviews");
     const paymentCollection = database.collection("payments");
     const claimsCollection = database.collection("claims");
+    const faqCollections = database.collection("faqs");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -657,6 +658,17 @@ app.post('/claims', async (req, res) => {
   } catch (error) {
     console.error("Error submitting claim:", error);
     res.status(500).send({ message: "Failed to submit claim" });
+  }
+});
+
+// getting faqs from db
+app.get('/faqs', async (req, res) => {
+  try {
+    const faqs = await faqCollections.find().sort({ helpfulCount: -1 }).toArray();
+    res.send(faqs);
+  } catch (error) {
+    console.error("Error fetching FAQs:", error);
+    res.status(500).send({ message: "Server error" });
   }
 });
 
