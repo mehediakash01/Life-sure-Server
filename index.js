@@ -227,6 +227,20 @@ async function run() {
       }
     });
 
+    // update User profile
+app.put('/users/:id', async (req, res) => {
+  const id = req.params.id;
+  const { name, photoURL } = req.body;
+
+  const result = await userCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { name, photoURL } }
+  );
+
+  res.send(result);
+});
+
+
     // Delete User
 
     app.delete("/users/:id", async (req, res) => {
