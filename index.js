@@ -630,6 +630,16 @@ app.post('/payment-history', async (req, res) => {
   }
 });
 
+// GET /payment-history
+app.get("/payment-history",  async (req, res) => {
+  try {
+    const payments = await paymentCollection.find().sort({ paidAt: -1 }).toArray();
+    res.status(200).json(payments);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch payment history", error });
+  }
+});
+
 // Create a new claim request
 app.post('/claims', async (req, res) => {
   const claim = req.body;
