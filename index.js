@@ -434,6 +434,29 @@ async function run() {
       }
     });
 
+// get application by email if policy status is active
+    app.get('/active-application', async (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).send({ message: "Missing email query" });
+
+  try {
+    const activeApp = await applicationsCollection.findOne({
+      email,
+      policyStatus: 'active'
+    });
+
+    if (!activeApp) {
+      return res.status(404).send({ message: "No active policy found" });
+    }
+
+    res.send(activeApp);
+  } catch (error) {
+    console.error("Error fetching active application:", error);
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
+
     // Assign Agent and mark as approved
     app.patch("/applications/:id/assign-agent", async (req, res) => {
       const { id } = req.params;
