@@ -558,6 +558,25 @@ app.patch('/applications/pay/:id', async (req, res) => {
       }
     });
 
+// update visit count
+    app.patch('/blogs/:id/visit', async (req, res) => {
+  const blogId = req.params.id;
+  try {
+    const result = await blogsCollection.updateOne(
+      { _id: new ObjectId(blogId) },
+      { $inc: { totalVisit: 1 } }
+    );
+    if (result.modifiedCount === 1) {
+      res.send({ message: 'Visit count incremented' });
+    } else {
+      res.status(404).send({ error: 'Blog not found' });
+    }
+  } catch (error) {
+    res.status(500).send({ error: 'Server error' });
+  }
+});
+
+
     // update blog by id
 
     app.put("/blogs/:id", async (req, res) => {
