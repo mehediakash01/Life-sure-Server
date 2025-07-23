@@ -41,6 +41,7 @@ async function run() {
     const applicationsCollection = database.collection("applications");
     const blogsCollection = database.collection("blogs");
     const reviewsCollection = database.collection("reviews");
+    const paymentCollection = database.collection("payments");
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -359,22 +360,7 @@ async function run() {
         res.status(500).send({ message: "Server error" });
       }
     });
-    // getting  application data by id
 
-    app.get("/applications/:id", async (req, res) => {
-      const {id} = req.params;
-      const filter = {_id: new ObjectId(id)};
-      try {
-        const applications = await applicationsCollection
-          .findOne(filter)
-          
-       
-        res.send(applications);
-      } catch (error) {
-        console.error("Error fetching applications:", error);
-        res.status(500).send({ message: "Server error" });
-      }
-    });
     // get application data by email
     app.get("/applications/agent/:email", async (req, res) => {
       const email = req.params.email;
@@ -400,6 +386,25 @@ async function run() {
         res.send(userApps);
       } catch (err) {
         res.status(500).send({ message: "Failed to fetch applications" });
+      }
+    });
+
+
+        // getting  application data by id
+
+    app.get("/applications/:id", async (req, res) => {
+   const id = req.params.id;
+ 
+      const filter = { _id: new ObjectId(id)};
+      try {
+        const applications = await applicationsCollection
+          .findOne(filter)
+          
+       
+        res.send(applications);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.status(500).send({ message: "Server error" });
       }
     });
 
@@ -451,16 +456,19 @@ async function run() {
 
     // update payment status 
 app.patch('/applications/pay/:id', async (req, res) => {
-  const { id } = req.params;
+ const id = req.params.id
+
   const paidAt = new Date();
 
   try {
+    
     const filter = { _id: new ObjectId(id) };
 
     const updateDoc = {
       $set: {
         paymentStatus: "paid",
-        dueDate: paidAt, // reuse dueDate field to store paidAt
+          policyStatus: "active",
+        dueDate: paidAt, 
       },
     };
 
@@ -583,6 +591,21 @@ app.patch('/applications/pay/:id', async (req, res) => {
       })
       res.json({clientSecret:paymentIntent.client_secret})
     })
+
+    // save payment history in database
+
+app.post('/payment-history', async (req, res) => {
+  const payment = req.body; // should include userEmail, amount, policyTitle, frequency, paidAt, applicationId
+
+  try {
+    const result = await paymentCollection.insertOne(payment);
+    res.send(result);
+  } catch (error) {
+    console.error("Error saving payment history:", error);
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
 
 
 
