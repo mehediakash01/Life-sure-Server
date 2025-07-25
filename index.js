@@ -305,6 +305,22 @@ app.put('/users/:id', async (req, res) => {
       res.send(policy);
     });
 
+    // GET top 6 popular policies
+app.get("/popular-policies", async (req, res) => {
+  try {
+    const policies = await policiesCollection
+      .find()
+      .sort({ purchaseCount: -1 })
+      .limit(6)
+      .toArray();
+    res.send(policies);
+  } catch (error) {
+    console.error("Failed to fetch popular policies:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
+
     // Update a policy by id
     app.patch("/policies/:id", async (req, res) => {
       try {
