@@ -677,6 +677,22 @@ app.get("/blogs/:id", async (req, res) => {
       }
     });
 
+    // GET reviews - Sorted by latest, limited to 10 or all
+app.get("/reviews", async (req, res) => {
+  try {
+    const reviews = await reviewsCollection
+      .find()
+      .sort({ createdAt: -1 }) // latest first
+      .toArray();
+
+    res.send(reviews);
+  } catch (error) {
+    console.error("Failed to fetch reviews:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
+
+
     app.post('/create-payment-intent',async (req,res)=>{
       const {amountInCents} = req.body;
       const paymentIntent = await stripe.paymentIntents.create({
