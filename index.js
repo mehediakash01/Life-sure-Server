@@ -427,7 +427,8 @@ app.put('/users/:id', async (req, res) => {
     // update status and increase count if approved
     app.patch("/applications/status/:id", async (req, res) => {
       const id = req.params.id;
-      const { status, policy_name } = req.body;
+      const { status,policyId } = req.body;
+
 
       try {
         const updateResult = await applicationsCollection.updateOne(
@@ -438,7 +439,7 @@ app.put('/users/:id', async (req, res) => {
         // Optional: Increase policy purchase count if status becomes 'approved'
         if (status === "approved") {
           await policiesCollection.updateOne(
-            { title: policy_name },
+          { id: policyId},
             { $inc: { purchaseCount: 1 } } // Assume this field exists
           );
         }
