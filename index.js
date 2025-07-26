@@ -589,6 +589,10 @@ app.patch('/applications/pay/:id', async (req, res) => {
       }
     });
 
+
+   
+
+
 // update visit count
     app.patch('/blogs/:id/visit', async (req, res) => {
   const blogId = req.params.id;
@@ -604,6 +608,22 @@ app.patch('/applications/pay/:id', async (req, res) => {
     }
   } catch (error) {
     res.status(500).send({ error: 'Server error' });
+  }
+});
+
+
+app.get("/blogs/latest", async (req, res) => {
+  try {
+    const latestBlogs = await blogsCollection
+      .find()
+      .sort({ publishDate: -1 }) // Newest first
+      .limit(4)
+      .toArray();
+
+    res.send(latestBlogs);
+  } catch (error) {
+    console.error("Failed to fetch latest blogs", error);
+    res.status(500).send({ error: "Internal server error" });
   }
 });
 
@@ -625,6 +645,7 @@ app.get("/blogs/:id", async (req, res) => {
     res.status(500).send({ error: "Server error" });
   }
 });
+ 
 
 
     // update blog by id
