@@ -203,6 +203,16 @@ async function run() {
         res.status(500).send({ message: "Internal server error" });
       }
     });
+    // getting featured agent
+
+    app.get('/featured-agents', async (req, res) => {
+  const agents = await userCollection
+    .find({ role: 'agent' })
+    .limit(3)
+    .toArray();
+  res.send(agents);
+});
+
 
     // Get user by email
     app.get("/users/:email", async (req, res) => {
