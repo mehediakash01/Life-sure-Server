@@ -44,6 +44,8 @@ async function run() {
     const paymentCollection = database.collection("payments");
     const claimsCollection = database.collection("claims");
     const faqCollections = database.collection("faqs");
+    const newsletterCollection = database.collection("newsletters");
+
     // Save user if not exists
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -800,6 +802,35 @@ app.patch('/faqs/:id/helpful', async (req, res) => {
     res.status(500).send({ message: "Server error" });
   }
 });
+
+
+// POST /newsletter - Public route (no auth required)
+app.post("/newsletter", async (req, res) => {
+  const { name, email } = req.body;
+
+
+
+  try {
+    // Optional: prevent duplicate subscriptions
+    const existing = await newsletterCollection.findOne({ email });
+
+    if (existing) {
+      return res.status(409).json({ message: "Already subscribed with this email." });
+    }
+
+    const result = await newsletterCollection.insertOne({
+      name,
+      email,
+      subscribedAt: new Date(),
+    });
+
+    res.status(201).json({ message: "Subscription successful", insertedId: result.insertedId });
+  } catch (error) {
+    console.error("Newsletter subscription failed:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 
 
