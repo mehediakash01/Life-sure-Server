@@ -3,7 +3,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 dotenv.config();
 
 const app = express();
@@ -17,7 +17,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-const stripe = require('stripe')(process.env.PAYMENT_KEY);
+const stripe = require("stripe")(process.env.PAYMENT_KEY);
 
 // Mongo URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jcgtqm0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -33,40 +33,41 @@ const client = new MongoClient(uri, {
 // JWT Middleware
 // Fixed JWT Middleware
 const verifyJwt = (req, res, next) => {
-
-  
   // Check for token in Authorization header
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log("No valid authorization header found");
-    return res.status(401).send({ message: 'Unauthorized Access - No token provided' });
+    return res
+      .status(401)
+      .send({ message: "Unauthorized Access - No token provided" });
   }
-  
+
   const token = authHeader.split(" ")[1];
-  console.log('Token extracted:', token ? 'Token present' : 'No token');
-  
+  console.log("Token extracted:", token ? "Token present" : "No token");
+
   if (!token) {
-    return res.status(401).send({ message: 'Unauthorized Access - Invalid token format' });
+    return res
+      .status(401)
+      .send({ message: "Unauthorized Access - Invalid token format" });
   }
 
   // Verify JWT secret exists
   if (!process.env.JWT_SECRET_KEY) {
     console.error("JWT_SECRET_KEY is not defined in environment variables");
-    return res.status(500).send({ message: 'Server configuration error' });
+    return res.status(500).send({ message: "Server configuration error" });
   }
 
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
     if (err) {
       console.log("JWT verify error:", err.message);
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).send({ message: 'Token expired' });
-      } else if (err.name === 'JsonWebTokenError') {
-        return res.status(401).send({ message: 'Invalid token' });
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).send({ message: "Token expired" });
+      } else if (err.name === "JsonWebTokenError") {
+        return res.status(401).send({ message: "Invalid token" });
       } else {
-        return res.status(403).send({ message: 'Forbidden access' });
+        return res.status(403).send({ message: "Forbidden access" });
       }
     }
-    
 
     req.decoded = decoded;
     req.tokenEmail = decoded.email; // Add this for easier access
@@ -96,13 +97,17 @@ async function run() {
     // to have access to the 'userCollection' database instance.
 
     const isAdmin = async (req, res, next) => {
-      const email =req.decoded?.email; // Email extracted by verifyJwt
+      const email = req.decoded?.email; // Email extracted by verifyJwt
       if (!email) {
-        return res.status(403).send({ message: 'Forbidden: Email not found in token.' });
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Email not found in token." });
       }
       const user = await userCollection.findOne({ email });
-      if (!user || user.role !== 'admin') {
-        return res.status(403).send({ message: 'Forbidden: Requires Admin role.' });
+      if (!user || user.role !== "admin") {
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Requires Admin role." });
       }
       next();
     };
@@ -110,11 +115,15 @@ async function run() {
     const isAgent = async (req, res, next) => {
       const email = req.decoded?.email;
       if (!email) {
-        return res.status(403).send({ message: 'Forbidden: Email not found in token.' });
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Email not found in token." });
       }
       const user = await userCollection.findOne({ email });
-      if (!user || user.role !== 'agent') {
-        return res.status(403).send({ message: 'Forbidden: Requires Agent role.' });
+      if (!user || user.role !== "agent") {
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Requires Agent role." });
       }
       next();
     };
@@ -122,24 +131,27 @@ async function run() {
     const isCustomer = async (req, res, next) => {
       const email = req.decoded?.email;
       if (!email) {
-        return res.status(403).send({ message: 'Forbidden: Email not found in token.' });
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Email not found in token." });
       }
       const user = await userCollection.findOne({ email });
-      if (!user || user.role !== 'customer') {
-        return res.status(403).send({ message: 'Forbidden: Requires Customer role.' });
+      if (!user || user.role !== "customer") {
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Requires Customer role." });
       }
       next();
     };
     // --- End Role-based Middleware Definitions ---
 
-
- app.post('/jwt', (req, res) => {
-      const user = { email: req.body.email }
+    app.post("/jwt", (req, res) => {
+      const user = { email: req.body.email };
       const Token = jwt.sign(user, process.env.JWT_SECRET_KEY, {
-        expiresIn: '10d'
-      })
-      res.send({ Token, message: 'jwt created successfully' });
-    })
+        expiresIn: "10d",
+      });
+      res.send({ Token, message: "jwt created successfully" });
+    });
     // Save user if not exists (public or handled by client-side auth flow)
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -176,19 +188,24 @@ async function run() {
     });
 
     // GET all pending agent applications - ADMIN ONLY
-    app.get("/agent-applications/pending", verifyJwt, isAdmin, async (req, res) => {
-      try {
-        const pending = await agentApplicationsCollection
-          .find({ status: "pending" })
-          .toArray();
-        res.send(pending);
-      } catch (err) {
-        console.error("Error fetching pending agent applications:", err);
-        res
-          .status(500)
-          .send({ message: "Failed to fetch pending applications" });
+    app.get(
+      "/agent-applications/pending",
+      verifyJwt,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const pending = await agentApplicationsCollection
+            .find({ status: "pending" })
+            .toArray();
+          res.send(pending);
+        } catch (err) {
+          console.error("Error fetching pending agent applications:", err);
+          res
+            .status(500)
+            .send({ message: "Failed to fetch pending applications" });
+        }
       }
-    });
+    );
 
     // Update user role - ADMIN ONLY
     app.patch("/users/:id/role", verifyJwt, isAdmin, async (req, res) => {
@@ -215,21 +232,26 @@ async function run() {
     });
 
     // Update agent application status and potentially user role - ADMIN ONLY
-    app.patch("/agent-applications/approve/:email", verifyJwt, isAdmin, async (req, res) => {
-      try {
-        const email = req.params.email;
-        const { status } = req.body;
-        // Update application status
-        const result = await agentApplicationsCollection.updateOne(
-          { email },
-          { $set: { status } }
-        );
-        res.send(result);
-      } catch (err) {
-        console.error("Error approving agent:", err);
-        res.status(500).send({ message: "Failed to approve agent" });
+    app.patch(
+      "/agent-applications/approve/:email",
+      verifyJwt,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const email = req.params.email;
+          const { status } = req.body;
+          // Update application status
+          const result = await agentApplicationsCollection.updateOne(
+            { email },
+            { $set: { status } }
+          );
+          res.send(result);
+        } catch (err) {
+          console.error("Error approving agent:", err);
+          res.status(500).send({ message: "Failed to approve agent" });
+        }
       }
-    });
+    );
 
     // Promote user to role by email (used after agent approval) - ADMIN ONLY
     app.patch("/users/promote/:email", verifyJwt, isAdmin, async (req, res) => {
@@ -256,20 +278,25 @@ async function run() {
     });
 
     // Reject agent application and send feedback - ADMIN ONLY
-    app.patch("/agent-applications/reject/:id", verifyJwt, isAdmin, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { feedback } = req.body;
-        const result = await agentApplicationsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { status: "rejected", feedback } }
-        );
-        res.send(result);
-      } catch (err) {
-        console.error("Error rejecting agent:", err);
-        res.status(500).send({ message: "Failed to reject agent" });
+    app.patch(
+      "/agent-applications/reject/:id",
+      verifyJwt,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const { feedback } = req.body;
+          const result = await agentApplicationsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { status: "rejected", feedback } }
+          );
+          res.send(result);
+        } catch (err) {
+          console.error("Error rejecting agent:", err);
+          res.status(500).send({ message: "Failed to reject agent" });
+        }
       }
-    });
+    );
 
     // GET all users (for Manage Users page) - ADMIN ONLY
     app.get("/users", verifyJwt, isAdmin, async (req, res) => {
@@ -283,46 +310,57 @@ async function run() {
     });
 
     // Getting featured agents (public or light auth) - consider if this needs JWT
-    app.get('/featured-agents', async (req, res) => {
+    app.get("/featured-agents", async (req, res) => {
       const agents = await userCollection
-        .find({ role: 'agent' })
+        .find({ role: "agent" })
         .limit(3)
         .toArray();
       res.send(agents);
     });
 
     // Get user by email (restricted to 'self' or 'admin')
-   app.get("/users/:email", verifyJwt, async (req, res) => {
-  const email = req.params.email;
-  const tokenEmail = req.decoded?.email;
+    app.get("/users/:email", verifyJwt, async (req, res) => {
+      const email = req.params.email;
+      const tokenEmail = req.decoded?.email;
 
-  try {
-    const userRequesting = await userCollection.findOne({ email: tokenEmail });
+      try {
+        const userRequesting = await userCollection.findOne({
+          email: tokenEmail,
+        });
 
-    if (!userRequesting) {
-      return res.status(401).send({ message: "Unauthorized: User not found" });
-    }
+        if (!userRequesting) {
+          return res
+            .status(401)
+            .send({ message: "Unauthorized: User not found" });
+        }
 
-    // Now safe to check role
-    if (userRequesting.role === 'admin' || tokenEmail === email) {
-      const user = await userCollection.findOne({ email });
-      if (!user) return res.status(404).send("User not found");
-      res.send(user);
-    } else {
-      return res.status(403).send({ message: "Forbidden: Cannot access other user's data" });
-    }
-  } catch (error) {
-    console.error("Error fetching user by email:", error);
-    res.status(500).send({ message: "Server error" });
-  }
-});
+        // Now safe to check role
+        if (userRequesting.role === "admin" || tokenEmail === email) {
+          const user = await userCollection.findOne({ email });
+          if (!user) return res.status(404).send("User not found");
+          res.send(user);
+        } else {
+          return res
+            .status(403)
+            .send({ message: "Forbidden: Cannot access other user's data" });
+        }
+      } catch (error) {
+        console.error("Error fetching user by email:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
 
     // Update user lastLogin - USER ONLY (authenticated user can update their own last login)
     app.patch("/users/last-login/:email", verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
-        if (req.tokenEmail !== email) { // Ensure user can only update their own lastLogin
-          return res.status(403).send({ message: "Forbidden: Cannot update another user's last login." });
+        if (req.tokenEmail !== email) {
+          // Ensure user can only update their own lastLogin
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: Cannot update another user's last login.",
+            });
         }
         const { lastLogin } = req.body;
         const result = await userCollection.updateOne(
@@ -337,12 +375,17 @@ async function run() {
     });
 
     // Update User profile - USER ONLY (authenticated user can update their own profile)
-    app.put('/users/:id', verifyJwt, async (req, res) => {
+    app.put("/users/:id", verifyJwt, async (req, res) => {
       const id = req.params.id;
       const { name, photoURL, email } = req.body; // Assuming email is passed in body for verification
 
-      if (req.tokenEmail !== email) { // Verify token email matches email in body
-        return res.status(403).send({ message: "Forbidden: Cannot update another user's profile." });
+      if (req.tokenEmail !== email) {
+        // Verify token email matches email in body
+        return res
+          .status(403)
+          .send({
+            message: "Forbidden: Cannot update another user's profile.",
+          });
       }
 
       const result = await userCollection.updateOne(
@@ -458,8 +501,13 @@ async function run() {
     app.post("/applications", verifyJwt, isCustomer, async (req, res) => {
       try {
         const application = req.body;
-        if (req.tokenEmail !== application.email) { // Ensure customer submits for themselves
-          return res.status(403).send({ message: "Forbidden: Cannot submit application for another user." });
+        if (req.tokenEmail !== application.email) {
+          // Ensure customer submits for themselves
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: Cannot submit application for another user.",
+            });
         }
         // Add default status
         application.status = "pending";
@@ -485,10 +533,12 @@ async function run() {
         const email = req.tokenEmail;
         const user = await userCollection.findOne({ email });
         let query = {};
-        if (user.role === 'agent') {
+        if (user.role === "agent") {
           query = { assignedAgent: email };
-        } else if (user.role !== 'admin') {
-          return res.status(403).send({ message: 'Forbidden: Requires Admin or Agent role.' });
+        } else if (user.role !== "admin") {
+          return res
+            .status(403)
+            .send({ message: "Forbidden: Requires Admin or Agent role." });
         }
         const applications = await applicationsCollection
           .find(query)
@@ -502,27 +552,43 @@ async function run() {
     });
 
     // Get application data by agent email - AGENT ONLY
-    app.get("/applications/agent/:email", verifyJwt, isAgent, async (req, res) => {
-      const email = req.params.email;
-      if (req.tokenEmail !== email) { // Ensure agent can only view their own assigned applications
-        return res.status(403).send({ message: "Forbidden: Cannot view other agent's applications." });
+    app.get(
+      "/applications/agent/:email",
+      verifyJwt,
+      isAgent,
+      async (req, res) => {
+        const email = req.params.email;
+        if (req.tokenEmail !== email) {
+          // Ensure agent can only view their own assigned applications
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: Cannot view other agent's applications.",
+            });
+        }
+        try {
+          const assignedApplications = await applicationsCollection
+            .find({ assignedAgent: email })
+            .sort({ submittedAt: -1 })
+            .toArray();
+          res.send(assignedApplications);
+        } catch (err) {
+          console.error("Failed to get assigned applications:", err);
+          res.status(500).send({ message: "Internal server error" });
+        }
       }
-      try {
-        const assignedApplications = await applicationsCollection
-          .find({ assignedAgent: email }).sort({ submittedAt: -1 })
-          .toArray();
-        res.send(assignedApplications);
-      } catch (err) {
-        console.error("Failed to get assigned applications:", err);
-        res.status(500).send({ message: "Internal server error" });
-      }
-    });
+    );
 
     // GET /applications/user/:email - CUSTOMER ONLY (view their own applications)
     app.get("/applications/user", verifyJwt, isCustomer, async (req, res) => {
       const email = req.query.email;
-      if (req.tokenEmail !== email) { // Ensure customer can only view their own applications
-        return res.status(403).send({ message: "Forbidden: Cannot view other user's applications." });
+      if (req.tokenEmail !== email) {
+        // Ensure customer can only view their own applications
+        return res
+          .status(403)
+          .send({
+            message: "Forbidden: Cannot view other user's applications.",
+          });
       }
       try {
         const userApps = await applicationsCollection
@@ -542,14 +608,23 @@ async function run() {
       try {
         const application = await applicationsCollection.findOne(filter);
         if (!application) {
-          return res.status(404).send({ message: 'Application not found.' });
+          return res.status(404).send({ message: "Application not found." });
         }
         // Check if the authenticated user has permission to view this application
         const user = await userCollection.findOne({ email: req.tokenEmail });
-        if (user.role === 'admin' || application.assignedAgent === req.tokenEmail || application.email === req.tokenEmail) {
+        if (
+          user.role === "admin" ||
+          application.assignedAgent === req.tokenEmail ||
+          application.email === req.tokenEmail
+        ) {
           res.send(application);
         } else {
-          return res.status(403).send({ message: 'Forbidden: You do not have permission to view this application.' });
+          return res
+            .status(403)
+            .send({
+              message:
+                "Forbidden: You do not have permission to view this application.",
+            });
         }
       } catch (error) {
         console.error("Error fetching application:", error);
@@ -558,20 +633,28 @@ async function run() {
     });
 
     // Update application status and increase count if approved - ADMIN/AGENT ONLY
-    app.patch("/applications/status/:id", verifyJwt, async (req, res) => { // Consider isAdmin or isAgent if specific actions are allowed
+    app.patch("/applications/status/:id", verifyJwt, async (req, res) => {
+      // Consider isAdmin or isAgent if specific actions are allowed
       const id = req.params.id;
-      const { status, policyId } = req.body;
+      const { status, policyId, rejectionFeedback } = req.body;
       try {
         const user = await userCollection.findOne({ email: req.tokenEmail });
-        if (user.role !== 'admin' && user.role !== 'agent') {
-            return res.status(403).send({ message: 'Forbidden: Requires Admin or Agent role.' });
+        if (user.role !== "admin" && user.role !== "agent") {
+          return res
+            .status(403)
+            .send({ message: "Forbidden: Requires Admin or Agent role." });
+        }
+
+        const updateFields = { status };
+
+        if (rejectionFeedback) {
+          updateFields.rejectionFeedback = rejectionFeedback;
         }
 
         const updateResult = await applicationsCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $set: { status } }
+          { $set: updateFields }
         );
-
         // Optional: Increase policy purchase count if status becomes 'approved'
         if (status === "approved") {
           await policiesCollection.updateOne(
@@ -587,14 +670,19 @@ async function run() {
     });
 
     // Get application by email if policy status is active - CUSTOMER ONLY
-    app.get('/active-application', verifyJwt, isCustomer, async (req, res) => {
+    app.get("/active-application", verifyJwt, isCustomer, async (req, res) => {
       const email = req.query.email;
-      if (!email || req.tokenEmail !== email) return res.status(400).send({ message: "Missing email query or unauthorized access" });
+      if (!email || req.tokenEmail !== email)
+        return res
+          .status(400)
+          .send({ message: "Missing email query or unauthorized access" });
       try {
-        const activeApp = await applicationsCollection.find({
-          email,
-          policyStatus: 'active'
-        }).toArray();
+        const activeApp = await applicationsCollection
+          .find({
+            email,
+            policyStatus: "active",
+          })
+          .toArray();
         if (!activeApp) {
           return res.status(404).send({ message: "No active policy found" });
         }
@@ -606,58 +694,84 @@ async function run() {
     });
 
     // Assign Agent and mark as approved - ADMIN ONLY
-    app.patch("/applications/:id/assign-agent", verifyJwt, isAdmin, async (req, res) => {
-      const { id } = req.params;
-      const { agentEmail } = req.body;
-      try {
-        const result = await applicationsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          {
-            $set: {
-              assignedAgent: agentEmail,
-            },
-          }
-        );
-        res.send(result);
-      } catch (err) {
-        res.status(500).send({ message: "Error assigning agent" });
+    app.patch(
+      "/applications/:id/assign-agent",
+      verifyJwt,
+      isAdmin,
+      async (req, res) => {
+        const { id } = req.params;
+        const { agentEmail } = req.body;
+        try {
+          const result = await applicationsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            {
+              $set: {
+                assignedAgent: agentEmail,
+              },
+            }
+          );
+          res.send(result);
+        } catch (err) {
+          res.status(500).send({ message: "Error assigning agent" });
+        }
       }
-    });
+    );
 
     // Update payment status - CUSTOMER ONLY (for their own application)
-    app.patch('/applications/pay/:id', verifyJwt, isCustomer, async (req, res) => {
-      const id = req.params.id;
-      const paidAt = new Date();
-      try {
-        const application = await applicationsCollection.findOne({ _id: new ObjectId(id) });
-        if (!application || application.email !== req.tokenEmail) {
-          return res.status(403).send({ message: "Forbidden: Cannot pay for another user's application." });
-        }
+    app.patch(
+      "/applications/pay/:id",
+      verifyJwt,
+      isCustomer,
+      async (req, res) => {
+        const id = req.params.id;
+        const paidAt = new Date();
+        try {
+          const application = await applicationsCollection.findOne({
+            _id: new ObjectId(id),
+          });
+          if (!application || application.email !== req.tokenEmail) {
+            return res
+              .status(403)
+              .send({
+                message:
+                  "Forbidden: Cannot pay for another user's application.",
+              });
+          }
 
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $set: {
-            paymentStatus: "paid",
-            policyStatus: "active",
-            dueDate: paidAt,
-          },
-        };
-        const result = await applicationsCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      } catch (error) {
-        console.error("Error updating payment status:", error);
-        res.status(500).send({ message: "Server error" });
+          const filter = { _id: new ObjectId(id) };
+          const updateDoc = {
+            $set: {
+              paymentStatus: "paid",
+              policyStatus: "active",
+              dueDate: paidAt,
+            },
+          };
+          const result = await applicationsCollection.updateOne(
+            filter,
+            updateDoc
+          );
+          res.send(result);
+        } catch (error) {
+          console.error("Error updating payment status:", error);
+          res.status(500).send({ message: "Server error" });
+        }
       }
-    });
+    );
 
     // Update status if rejected - ADMIN/AGENT ONLY
-    app.patch("/applications/:id/reject", verifyJwt, async (req, res) => { // Could be isAdmin or isAgent
+    app.patch("/applications/:id/reject", verifyJwt, async (req, res) => {
+      // Could be isAdmin or isAgent
       const id = req.params.id;
       const { feedback } = req.body;
       try {
         const user = await userCollection.findOne({ email: req.tokenEmail });
-        if (user.role !== 'admin' && user.role !== 'agent') {
-            return res.status(403).send({ message: 'Forbidden: Requires Admin or Agent role to reject applications.' });
+        if (user.role !== "admin" && user.role !== "agent") {
+          return res
+            .status(403)
+            .send({
+              message:
+                "Forbidden: Requires Admin or Agent role to reject applications.",
+            });
         }
 
         const result = await applicationsCollection.updateOne(
@@ -680,8 +794,13 @@ async function run() {
     app.post("/blogs", verifyJwt, isAgent, async (req, res) => {
       try {
         const blogData = req.body;
-        if (req.tokenEmail !== blogData.authorEmail) { // Ensure agent posts their own blogs
-          return res.status(403).send({ message: "Forbidden: You can only post blogs as yourself." });
+        if (req.tokenEmail !== blogData.authorEmail) {
+          // Ensure agent posts their own blogs
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: You can only post blogs as yourself.",
+            });
         }
         const result = await blogsCollection.insertOne(blogData);
         res.status(201).send({ insertedId: result.insertedId });
@@ -692,7 +811,8 @@ async function run() {
     });
 
     // Get blogs (public or based on author for agent's own blogs)
-    app.get("/blogs", async (req, res) => { // No specific role required unless querying for agent's own blogs
+    app.get("/blogs", async (req, res) => {
+      // No specific role required unless querying for agent's own blogs
       try {
         const email = req.query.email;
         const query = email ? { authorEmail: email } : {}; // Allow filtering by author email
@@ -707,7 +827,7 @@ async function run() {
     });
 
     // Update visit count (public)
-    app.patch('/blogs/:id/visit', async (req, res) => {
+    app.patch("/blogs/:id/visit", async (req, res) => {
       const blogId = req.params.id;
       try {
         const result = await blogsCollection.updateOne(
@@ -715,12 +835,12 @@ async function run() {
           { $inc: { totalVisit: 1 } }
         );
         if (result.modifiedCount === 1) {
-          res.send({ message: 'Visit count incremented' });
+          res.send({ message: "Visit count incremented" });
         } else {
-          res.status(404).send({ error: 'Blog not found' });
+          res.status(404).send({ error: "Blog not found" });
         }
       } catch (error) {
-        res.status(500).send({ error: 'Server error' });
+        res.status(500).send({ error: "Server error" });
       }
     });
 
@@ -761,10 +881,22 @@ async function run() {
         const updatedBlog = req.body;
 
         const user = await userCollection.findOne({ email: req.tokenEmail });
-        if (user.role === 'agent' && updatedBlog.authorEmail !== req.tokenEmail) {
-            return res.status(403).send({ message: "Forbidden: You can only update your own blogs." });
-        } else if (user.role !== 'admin' && user.role !== 'agent') {
-            return res.status(403).send({ message: 'Forbidden: Requires Admin or Agent role to update blogs.' });
+        if (
+          user.role === "agent" &&
+          updatedBlog.authorEmail !== req.tokenEmail
+        ) {
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: You can only update your own blogs.",
+            });
+        } else if (user.role !== "admin" && user.role !== "agent") {
+          return res
+            .status(403)
+            .send({
+              message:
+                "Forbidden: Requires Admin or Agent role to update blogs.",
+            });
         }
 
         const result = await blogsCollection.updateOne(
@@ -783,14 +915,23 @@ async function run() {
         const id = req.params.id;
         const blog = await blogsCollection.findOne({ _id: new ObjectId(id) });
         if (!blog) {
-            return res.status(404).send({ message: 'Blog not found.' });
+          return res.status(404).send({ message: "Blog not found." });
         }
 
         const user = await userCollection.findOne({ email: req.tokenEmail });
-        if (user.role === 'agent' && blog.authorEmail !== req.tokenEmail) {
-            return res.status(403).send({ message: "Forbidden: You can only delete your own blogs." });
-        } else if (user.role !== 'admin' && user.role !== 'agent') {
-            return res.status(403).send({ message: 'Forbidden: Requires Admin or Agent role to delete blogs.' });
+        if (user.role === "agent" && blog.authorEmail !== req.tokenEmail) {
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: You can only delete your own blogs.",
+            });
+        } else if (user.role !== "admin" && user.role !== "agent") {
+          return res
+            .status(403)
+            .send({
+              message:
+                "Forbidden: Requires Admin or Agent role to delete blogs.",
+            });
         }
 
         const result = await blogsCollection.deleteOne({
@@ -805,8 +946,11 @@ async function run() {
     // Post review into database - CUSTOMER ONLY
     app.post("/reviews", verifyJwt, isCustomer, async (req, res) => {
       const reviewData = req.body;
-      if (req.tokenEmail !== reviewData.reviewerEmail) { // Ensure customer posts their own reviews
-        return res.status(403).send({ message: "Forbidden: Cannot post review as another user." });
+      if (req.tokenEmail !== reviewData.reviewerEmail) {
+        // Ensure customer posts their own reviews
+        return res
+          .status(403)
+          .send({ message: "Forbidden: Cannot post review as another user." });
       }
       try {
         const result = await reviewsCollection.insertOne(reviewData);
@@ -830,20 +974,30 @@ async function run() {
       }
     });
 
-    app.post('/create-payment-intent', verifyJwt, isCustomer, async (req,res)=>{
-      const {amountInCents} = req.body;
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount:amountInCents,
-        currency: 'usd',
-      })
-      res.json({clientSecret:paymentIntent.client_secret})
-    })
+    app.post(
+      "/create-payment-intent",
+      verifyJwt,
+      isCustomer,
+      async (req, res) => {
+        const { amountInCents } = req.body;
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amountInCents,
+          currency: "usd",
+        });
+        res.json({ clientSecret: paymentIntent.client_secret });
+      }
+    );
 
     // Save payment history in database - CUSTOMER ONLY
-    app.post('/payment-history', verifyJwt, isCustomer, async (req, res) => {
+    app.post("/payment-history", verifyJwt, isCustomer, async (req, res) => {
       const payment = req.body; // should include userEmail, amount, policyTitle, frequency, paidAt, applicationId
-      if (req.tokenEmail !== payment.userEmail) { // Ensure customer records their own payment
-        return res.status(403).send({ message: "Forbidden: Cannot record payment for another user." });
+      if (req.tokenEmail !== payment.userEmail) {
+        // Ensure customer records their own payment
+        return res
+          .status(403)
+          .send({
+            message: "Forbidden: Cannot record payment for another user.",
+          });
       }
       try {
         const result = await paymentCollection.insertOne(payment);
@@ -861,31 +1015,52 @@ async function run() {
         const user = await userCollection.findOne({ email: req.tokenEmail });
         let query = {};
 
-        if (email && user.role === 'customer' && req.tokenEmail !== email) {
-            return res.status(403).send({ message: 'Forbidden: Cannot view other user\'s payment history.' });
-        } else if (user.role === 'customer' && !email) { // If customer and no email query, only show their own
-            query = { userEmail: req.tokenEmail };
-        } else if (email && user.role === 'admin') { // Admin can view specific user's history
-            query = { userEmail: email };
-        } else if (user.role === 'admin' && !email) { // Admin can view all history
-            // No specific query, fetches all
+        if (email && user.role === "customer" && req.tokenEmail !== email) {
+          return res
+            .status(403)
+            .send({
+              message: "Forbidden: Cannot view other user's payment history.",
+            });
+        } else if (user.role === "customer" && !email) {
+          // If customer and no email query, only show their own
+          query = { userEmail: req.tokenEmail };
+        } else if (email && user.role === "admin") {
+          // Admin can view specific user's history
+          query = { userEmail: email };
+        } else if (user.role === "admin" && !email) {
+          // Admin can view all history
+          // No specific query, fetches all
         } else {
-            return res.status(403).send({ message: 'Forbidden: Requires Admin or Customer role to view payment history.' });
+          return res
+            .status(403)
+            .send({
+              message:
+                "Forbidden: Requires Admin or Customer role to view payment history.",
+            });
         }
 
-        const payments = await paymentCollection.find(query).sort({ paidAt: -1 }).toArray();
+        const payments = await paymentCollection
+          .find(query)
+          .sort({ paidAt: -1 })
+          .toArray();
         res.status(200).json(payments);
       } catch (error) {
-        res.status(500).json({ message: "Failed to fetch payment history", error });
+        res
+          .status(500)
+          .json({ message: "Failed to fetch payment history", error });
       }
     });
 
-
     // Create a new claim request - CUSTOMER ONLY
-    app.post('/claims', verifyJwt, isCustomer, async (req, res) => {
+    app.post("/claims", verifyJwt, isCustomer, async (req, res) => {
       const claim = req.body;
-      if (req.tokenEmail !== claim.userEmail) { // Ensure customer submits their own claim
-        return res.status(403).send({ message: "Forbidden: Cannot submit claim for another user." });
+      if (req.tokenEmail !== claim.userEmail) {
+        // Ensure customer submits their own claim
+        return res
+          .status(403)
+          .send({
+            message: "Forbidden: Cannot submit claim for another user.",
+          });
       }
       try {
         const result = await claimsCollection.insertOne(claim);
@@ -900,9 +1075,12 @@ async function run() {
     });
 
     // Getting faqs from db (public)
-    app.get('/faqs', async (req, res) => {
+    app.get("/faqs", async (req, res) => {
       try {
-        const faqs = await faqCollections.find().sort({ helpfulCount: -1 }).toArray();
+        const faqs = await faqCollections
+          .find()
+          .sort({ helpfulCount: -1 })
+          .toArray();
         res.send(faqs);
       } catch (error) {
         console.error("Error fetching FAQs:", error);
@@ -911,7 +1089,7 @@ async function run() {
     });
 
     // Update faqs helpfulCount (public - any user can vote)
-    app.patch('/faqs/:id/helpful', async (req, res) => {
+    app.patch("/faqs/:id/helpful", async (req, res) => {
       const id = req.params.id;
       try {
         const result = await faqCollections.updateOne(
@@ -919,7 +1097,9 @@ async function run() {
           { $inc: { helpfulCount: 1 } }
         );
         if (result.modifiedCount === 0) {
-          return res.status(404).send({ message: "FAQ not found or already updated." });
+          return res
+            .status(404)
+            .send({ message: "FAQ not found or already updated." });
         }
         res.send({ message: "Vote added!" });
       } catch (error) {
@@ -935,14 +1115,21 @@ async function run() {
         // Optional: prevent duplicate subscriptions
         const existing = await newsletterCollection.findOne({ email });
         if (existing) {
-          return res.status(409).json({ message: "Already subscribed with this email." });
+          return res
+            .status(409)
+            .json({ message: "Already subscribed with this email." });
         }
         const result = await newsletterCollection.insertOne({
           name,
           email,
           subscribedAt: new Date(),
         });
-        res.status(201).json({ message: "Subscription successful", insertedId: result.insertedId });
+        res
+          .status(201)
+          .json({
+            message: "Subscription successful",
+            insertedId: result.insertedId,
+          });
       } catch (error) {
         console.error("Newsletter subscription failed:", error);
         res.status(500).json({ message: "Internal server error" });
