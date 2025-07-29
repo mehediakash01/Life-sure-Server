@@ -509,7 +509,7 @@ async function run() {
       }
       try {
         const assignedApplications = await applicationsCollection
-          .find({ assignedAgent: email })
+          .find({ assignedAgent: email }).sort({ submittedAt: -1 })
           .toArray();
         res.send(assignedApplications);
       } catch (err) {
