@@ -946,7 +946,7 @@ async function run() {
     // Post review into database - CUSTOMER ONLY
     app.post("/reviews", verifyJwt, isCustomer, async (req, res) => {
       const reviewData = req.body;
-      if (req.tokenEmail !== reviewData.reviewerEmail) {
+      if (req.tokenEmail !== reviewData.email) {
         // Ensure customer posts their own reviews
         return res
           .status(403)
@@ -1054,7 +1054,7 @@ async function run() {
     // Create a new claim request - CUSTOMER ONLY
     app.post("/claims", verifyJwt, isCustomer, async (req, res) => {
       const claim = req.body;
-      if (req.tokenEmail !== claim.userEmail) {
+      if (req.tokenEmail !== claim.email) {
         // Ensure customer submits their own claim
         return res
           .status(403)
