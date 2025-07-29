@@ -11,7 +11,8 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "http://life-sure.surge.sh",
+    
     credentials: true,
   })
 );
@@ -77,7 +78,7 @@ const verifyJwt = (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("✅ MongoDB connected");
 
     const database = client.db("lifeSure");
@@ -1137,6 +1138,10 @@ async function run() {
     });
 
     // Start server AFTER DB connection is ready
+    app.get("/", (req, res) => {
+  res.send("🚀 Backend is running successfully!");
+});
+
     app.listen(port, () => {
       console.log(`🚀 Server running on http://localhost:${port}`);
     });
