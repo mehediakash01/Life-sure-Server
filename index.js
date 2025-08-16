@@ -9,13 +9,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(
-  cors({
-    origin: "http://life-sure.surge.sh",
-    
-    credentials: true,
-  })
-);
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 const stripe = require("stripe")(process.env.PAYMENT_KEY);
